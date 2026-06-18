@@ -10,7 +10,12 @@ def index(request):
                     due_at=make_aware(parse_datetime(request.POST['due_at'])))
         task.save()
 
-    tasks = Task.objects.all()
+    if request.GET.get('order') == 'due':
+        # クエリパラメータが order=due の場合は締切の早い順
+        tasks = Task.objects.order_by('due_at')
+    else:
+        # それ以外の場合は登録の最新順
+        tasks = Task.objects.order_by('-posted_at')
 
     context = {
         'tasks': tasks
