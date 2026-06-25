@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.utils import timezone
 from datetime import datetime
 from todo.models import Task
@@ -35,7 +35,7 @@ class TaskModelTestCase(TestCase):
         task.save()
         self.assertFalse(task.is_overdue(current))
 
- class TodoViewTestCase(TestCase):
+class TodoViewTestCase(TestCase):
     def test_index_get(self):
         client = Client()
         response = client.get('/')
@@ -82,3 +82,31 @@ class TaskModelTestCase(TestCase):
         self.assertEqual(response.templates[0].name, 'todo/index.html')
         self.assertEqual(response.context['tasks'][0], task1) 
         self.assertEqual(response.context['tasks'][1], task2) 
+
+    def test_index_post_complete(self):
+        task = Task(title='task1')
+        task.save()
+
+        client = Client()
+        data = {'id': task.pk, 'action': 'toggle', 'title': ''}
+        response = client.post('/', data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.templates[0].name, 'todo/index.html')
+        
+        task = Task.objects.get(pk=task.pk)
+        self.assertTrue(task.completed)
+
+    def test_index_post_incomplete(self):
+        task = Task(title='task1', completed=True)
+        task.save()
+
+        client = Client()
+        data = {'id': task.pk, 'action': 'toggle', 'title': ''}
+        response = client.post('/', data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.templates[0].name, 'todo/index.html')
+        
+        task = Task.objects.get(pk=task.pk)
+        self.assertFalse(task.completed)
